@@ -1,0 +1,91 @@
+---
+description: OWASP Top 10 2025 기반 보안 가이드 - FastAPI/Python 서비스 개발 시 항상 적용
+alwaysApply: true
+---
+
+# OWASP Top 10 2025 보안 규칙
+
+코드 작성 시 아래 10개 항목을 반드시 준수한다.
+
+## A01 - Broken Access Control (접근 제어)
+- 모든 보호 라우터에 `Depends(get_current_user)` 필수
+- 권한 없으면 반드시 `403 Forbidden` 반환, 절대 `404`로 숨기지 않음
+
+```python
+# ✅ GOOD
+@router.get("/admin")
+def admin_page(user: User = Depends(require_admin)):
+    ...
+
+# ❌ BAD
+@router.get("/admin")
+def admin_page():  # 인증 없음
+    ...
+```
+
+## A02 - Security Misconfiguration (보안 설정 오류)
+- 시크릿은 반드시 `.env` 파일로 관리, 코드에 하드코딩 금지
+- CORS는 와일드카드(`*`) 대신 허용 도메인 명시
+
+```python
+# ✅ GOOD
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+# ❌ BAD
+SECRET_KEY = "mysecret123"
+```
+
+## A04 - Cryptographic Failures (암호화 실패)
+- 비밀번호: `bcrypt` 또는 `argon2` 해싱 필수, MD5/SHA1 금지
+- JWT 토큰 만료시간(`exp`) 반드시 설정 (최대 24시간)
+- HTTPS 강제 적용
+
+## A05 - Injection (인젝션)
+- DB 쿼리는 SQLAlchemy ORM 사용, raw SQL 문자열 금지
+- 입력값은 Pydantic 모델로 검증
+
+```python
+# ✅ GOOD
+db.query(User).filter(User.email == email).first()
+
+# ❌ BAD
+db.execute(f"SELECT * FROM users WHERE email = '{email}'")
+```
+
+## A07 - Authentication Failures (인증 실패)
+- 로그인 실패 시 "이메일 또는 비밀번호가 틀렸습니다" (구체적 이유 노출 금지)
+- 로그인 실패 횟수 제한 (예: 5회 이상 시 잠금)
+- 세션/토큰 로그아웃 시 서버에서 무효화
+
+## A09 - Security Logging (보안 로깅)
+- 인증 실패, 권한 오류는 반드시 로그 기록 (IP, 시간 포함)
+- 로그에 비밀번호, 토큰 등 민감 정보 절대 포함 금지
+
+```python
+# ✅ GOOD
+logger.warning(f"Login failed: {email} from {request.client.host}")
+
+# ❌ BAD
+logger.info(f"Login attempt: {email} / {password}")
+```
+
+## A10 - Exceptional Conditions (예외 처리)
+- 전역 exception handler 설정, 상세 오류 메시지 외부 노출 금지
+- 사용자에게는 일반 메시지, 내부 로그에만 상세 오류 기록
+
+```python
+# ✅ GOOD
+@app.exception_handler(Exception)
+async def global_handler(request, exc):
+    logger.error(f"Unhandled error: {exc}")
+    return JSONResponse(status_code=500, content={"detail": "서버 오류가 발생했습니다."})
+```
+
+## 체크리스트 (코드 리뷰 시)
+- [ ] 모든 엔드포인트에 인증 적용 여부 확인
+- [ ] 하드코딩된 시크릿/비밀번호 없음
+- [ ] 비밀번호 bcrypt 해싱 적용
+- [ ] JWT 만료시간 설정
+- [ ] SQL ORM 사용 (raw query 없음)
+- [ ] 로그인 실패 메시지 모호하게 처리
+- [ ] 민감 정보 로그 제외
