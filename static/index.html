@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mail Kanban</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .panel-tab {
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .panel-tab.active { color: #1a1a2e; border-bottom-color: #2563eb; }
+    .panel-tab:hover { color: #1a1a2e; }
+    #tab-content-comments { display: none; flex-direction: column; height: calc(100% - 200px); }
+    #tab-content-comments.visible { display: flex !important; }
+    #tab-content-mail.hidden { display: none !important; }
+
+    /* 클레임 배지 on card */
+    .claim-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 20px;
+      background: rgba(22,163,74,.1);
+      color: #15803d;
+      border: 1px solid rgba(22,163,74,.25);
+      margin-top: 4px;
+    }
+    .claim-badge.unclaimed {
+      background: rgba(107,114,128,.08);
+      color: #6b7280;
+      border-color: rgba(107,114,128,.2);
+    }
+
+    #comment-body:focus { border-color: #2563eb; }
+    .comment-item {
+      background: #f8f9fc;
+      border: 1px solid #e2e4ef;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .comment-author { font-size: 12px; font-weight: 600; color: #1a1a2e; }
+    .comment-time { font-size: 11px; color: #6b7280; margin-left: 8px; }
+    .comment-content { font-size: 13px; margin-top: 6px; line-height: 1.5; white-space: pre-wrap; color: #4a4a6a; }
+    .mention-tag { color: #2563eb; font-weight: 600; }
+    #panel-claim-bar { display: flex !important; }
+  </style>
+</head>
+<body>
+
+<!-- Outlook 미연동 배너 -->
+<div id="outlook-banner" style="display:none;background:#eff6ff;border-bottom:1px solid #bfdbfe;padding:10px 24px;font-size:13px;color:#1e40af;display:flex;align-items:center;gap:12px">
+  <span>⚠️ Outlook이 연동되지 않았습니다. 메일을 동기화하려면 Outlook을 연동하세요.</span>
+  <a href="/api/outlook/connect" style="color:#2563eb;text-decoration:none;font-weight:600">Outlook 연동 →</a>
+</div>
+
+<!-- 헤더 -->
+<header id="app-header">
+  <div class="header-logo">
+    <div class="logo-icon">📬</div>
+    Mail Kanban
+  </div>
+  <div class="header-right">
+    <!-- 프로젝트 선택 -->
+    <div id="project-selector" style="display:none;align-items:center;gap:8px">
+      <a href="/projects" title="프로젝트 변경" style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:7px;text-decoration:none;color:#1a1a2e;font-size:12px;font-weight:600">
+        <span>📁</span>
+        <span id="project-name-label">프로젝트 없음</span>
+        <span style="color:#6b7280;font-size:10px">▾</span>
+      </a>
+    </div>
+    <div class="sync-info" id="sync-info">
+      <span id="sync-time-label">동기화 대기</span>
+    </div>
+    <button class="btn btn-secondary" id="btn-sync" onclick="triggerSync()">
+      <span id="sync-icon">🔄</span> 동기화
+    </button>
+    <div class="profile-area" id="profile-area" style="display:none">
+      <div class="status-dot"></div>
+      <div class="profile-avatar" id="profile-avatar">?</div>
+      <div class="profile-info">
+        <div class="profile-name" id="profile-name">-</div>
+        <div class="profile-email" id="profile-email">-</div>
+      </div>
+    </div>
+    <div id="header-nav" style="display:none;gap:8px;align-items:center">
+      <a href="/projects" class="btn btn-secondary" style="font-size:12px">📁 프로젝트</a>
+      <a href="/settings" class="btn btn-secondary" style="font-size:12px">⚙️ 설정</a>
+      <span id="admin-link" style="display:none"><a href="/admin" class="btn btn-secondary" style="font-size:12px">🛡 관리</a></span>
+      <button class="btn btn-secondary" onclick="doLogout()" style="font-size:12px">로그아웃</button>
+    </div>
+  </div>
+</header>
+
+<!-- 메인 바디 -->
+<div id="app-body">
+
+  <!-- 사이드바 -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      동기화 폴더 설정
+      <button class="btn-ghost btn" style="padding:2px 6px;font-size:11px" onclick="refreshFolders()">↻</button>
+    </div>
+    <div class="sidebar-actions">
+      <button class="btn btn-ghost" onclick="selectAllFolders()">전체선택</button>
+      <button class="btn btn-ghost" onclick="deselectAllFolders()">전체해제</button>
+    </div>
+    <div id="folder-tree">
+      <div class="empty-state">
+        <div class="empty-state-icon">📁</div>
+        <div>로그인 후 폴더를 불러옵니다</div>
+      </div>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="btn btn-primary" onclick="saveFolderSelection()" style="justify-content:center">
+        설정 저장 및 동기화 시작
+      </button>
+      <div class="last-sync" id="last-sync-text">마지막 동기화: -</div>
+    </div>
+  </aside>
+
+  <!-- 칸반 영역 -->
+  <div id="kanban-area">
+    <div id="kanban-board">
+      <div class="kanban-column" id="col-inbox">
+        <div class="column-header">
+          <div class="column-color-bar" style="background:#3b82f6"></div>
+          <div class="column-title">수신함</div>
+          <div class="column-count" id="count-inbox">0</div>
+        </div>
+        <div class="column-body" id="list-inbox" data-status="inbox"></div>
+      </div>
+
+      <div class="kanban-column" id="col-auto_reply">
+        <div class="column-header">
+          <div class="column-color-bar" style="background:#22c55e"></div>
+          <div class="column-title">자동 회신 가능</div>
+          <div class="column-count" id="count-auto_reply">0</div>
+        </div>
+        <div class="column-body" id="list-auto_reply" data-status="auto_reply"></div>
+      </div>
+
+      <div class="kanban-column" id="col-manual">
+        <div class="column-header">
+          <div class="column-color-bar" style="background:#f59e0b"></div>
+          <div class="column-title">수동 처리 필요</div>
+          <div class="column-count" id="count-manual">0</div>
+        </div>
+        <div class="column-body" id="list-manual" data-status="manual"></div>
+      </div>
+
+      <div class="kanban-column" id="col-done">
+        <div class="column-header">
+          <div class="column-color-bar" style="background:#6b7280"></div>
+          <div class="column-title">처리 완료</div>
+          <div class="column-count" id="count-done">0</div>
+        </div>
+        <div class="column-body" id="list-done" data-status="done"></div>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+<!-- 상세 패널 (풀스크린 모달) -->
+<div id="detail-panel" onclick="onPanelBackdropClick(event)">
+  <div id="detail-panel-inner">
+    <div class="panel-header">
+      <button class="panel-close" onclick="closePanel()">✕</button>
+      <div class="panel-title" id="panel-title">-</div>
+      <select class="panel-status-select" id="panel-status" onchange="updateThreadStatus(this.value)">
+        <option value="inbox">📥 수신함</option>
+        <option value="auto_reply">🤖 자동 회신</option>
+        <option value="manual">✋ 수동 처리</option>
+        <option value="done">✅ 완료</option>
+      </select>
+    </div>
+
+    <!-- 클레임 배지 + 버튼 -->
+    <div id="panel-claim-bar" style="display:none;padding:8px 24px;border-bottom:1px solid #e2e4ef;font-size:12px;display:flex;align-items:center;justify-content:space-between">
+      <span id="panel-claim-label" style="color:#6b7280"></span>
+      <div style="display:flex;gap:8px">
+        <button id="btn-claim" class="btn btn-secondary" style="font-size:11px;padding:4px 10px" onclick="claimThread()">클레임</button>
+        <button id="btn-unclaim" class="btn btn-danger" style="font-size:11px;padding:4px 10px;display:none" onclick="unclaimThread()">해제</button>
+      </div>
+    </div>
+
+    <div class="panel-meta" id="panel-meta"></div>
+
+    <!-- 탭 전환 -->
+    <div id="panel-tabs" style="display:flex;border-bottom:1px solid #e2e4ef">
+      <button id="tab-mail" class="panel-tab active" onclick="switchTab('mail')">📧 메일 쓰레드</button>
+      <button id="tab-comments" class="panel-tab" onclick="switchTab('comments')">💬 팀 댓글 <span id="comment-count-badge" style="display:none;background:#e8ecf4;color:#4a4a6a;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px">0</span></button>
+    </div>
+
+    <!-- 메일 탭 -->
+    <div id="tab-content-mail">
+      <div id="thread-timeline"></div>
+      <div id="reply-area" style="display:none">
+        <div class="reply-type-row">
+          <select class="reply-type-select" id="reply-type" onchange="onReplyTypeChange()">
+            <option value="reply">↩️ 답장</option>
+            <option value="replyAll">↩️ 전체 답장</option>
+            <option value="forward">→ 전달</option>
+          </select>
+        </div>
+        <div class="recipient-row">
+          <div class="recipient-label">받는사람</div>
+          <div class="recipient-tags" id="to-tags" onclick="focusInput(this)">
+            <input class="recipient-input" id="to-input" placeholder="이메일 또는 이름 입력..."
+                   oninput="onRecipientInput(this,'to')" onkeydown="onRecipientKeydown(event,this,'to')">
+            <div class="autocomplete-dropdown" id="to-autocomplete" style="display:none"></div>
+          </div>
+        </div>
+        <div class="recipient-row">
+          <div class="recipient-label">참조(CC)</div>
+          <div class="recipient-tags" id="cc-tags" onclick="focusInput(this)">
+            <input class="recipient-input" id="cc-input" placeholder="참조 추가..."
+                   oninput="onRecipientInput(this,'cc')" onkeydown="onRecipientKeydown(event,this,'cc')">
+            <div class="autocomplete-dropdown" id="cc-autocomplete" style="display:none"></div>
+          </div>
+        </div>
+        <div class="recipient-row">
+          <div class="recipient-label">숨은참조</div>
+          <div class="recipient-tags" id="bcc-tags" onclick="focusInput(this)">
+            <input class="recipient-input" id="bcc-input" placeholder="숨은참조 추가..."
+                   oninput="onRecipientInput(this,'bcc')" onkeydown="onRecipientKeydown(event,this,'bcc')">
+            <div class="autocomplete-dropdown" id="bcc-autocomplete" style="display:none"></div>
+          </div>
+        </div>
+        <div class="reply-body-area">
+          <textarea id="reply-body" placeholder="회신 내용을 입력하세요..."></textarea>
+        </div>
+        <div class="reply-actions">
+          <button class="btn btn-secondary" onclick="closeReplyForm()">취소</button>
+          <button class="btn btn-primary" id="btn-send" onclick="sendReply()">전송 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 댓글 탭 -->
+    <div id="tab-content-comments" style="display:none;display:flex;flex-direction:column;height:calc(100% - 160px)">
+      <div id="comments-list" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="color:#6b7280;font-size:13px;text-align:center;padding:20px">댓글을 불러오는 중...</div>
+      </div>
+      <div id="comment-input-area" style="padding:12px 24px;border-top:1px solid #e2e4ef">
+        <div style="font-size:11px;color:#6b7280;margin-bottom:6px">@[이름](user_id) 형태로 팀원을 멘션할 수 있습니다</div>
+        <textarea id="comment-body" placeholder="팀원에게 댓글 달기..." style="width:100%;padding:8px 12px;background:#f5f6fa;border:1px solid #e2e4ef;border-radius:8px;color:#1a1a2e;font-size:13px;font-family:inherit;resize:vertical;min-height:64px;outline:none"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-primary" style="font-size:12px;padding:6px 14px" onclick="submitComment()">댓글 달기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 수신자 변경 확인 모달 -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-box">
+    <div class="modal-title">⚠️ 수신자 변경 알림</div>
+    <div class="modal-body" id="confirm-modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('confirm-modal')">취소</button>
+      <button class="btn btn-primary" onclick="confirmSend()">확인 후 전송</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast 컨테이너 -->
+<div id="toast-container"></div>
+
+<!-- SortableJS -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="/static/js/kanban.js"></script>
+</body>
+</html>

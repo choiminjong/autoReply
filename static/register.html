@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회원가입 — Mail Kanban</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #238636;
+      --accent-hover: #2ea043;
+      --error: #f85149;
+      --success: #3fb950;
+      --input-bg: #0d1117;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .auth-logo-icon { font-size: 40px; display: block; margin-bottom: 8px; }
+    .auth-logo-title { font-size: 22px; font-weight: 700; }
+    .auth-logo-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+    }
+
+    .auth-card h2 { font-size: 18px; font-weight: 600; margin-bottom: 8px; text-align: center; }
+
+    .auth-card .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .first-user-badge {
+      background: rgba(63, 185, 80, 0.1);
+      border: 1px solid rgba(63, 185, 80, 0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--success);
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .form-group input:focus { border-color: #58a6ff; }
+
+    .password-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 11px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 8px;
+    }
+
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      background: rgba(248, 81, 73, 0.1);
+      border: 1px solid rgba(248, 81, 73, 0.4);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--error);
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .auth-footer a { color: #58a6ff; text-decoration: none; }
+    .auth-footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-logo">
+      <span class="auth-logo-icon">📬</span>
+      <div class="auth-logo-title">Mail Kanban</div>
+      <div class="auth-logo-subtitle">팀 메일 칸반보드 관리 시스템</div>
+    </div>
+
+    <div class="auth-card">
+      <h2>회원가입</h2>
+      <p class="subtitle">팀원을 초대하려면 먼저 계정을 만드세요</p>
+
+      <div class="first-user-badge" id="first-user-badge">
+        🎉 첫 번째 계정입니다 — 자동으로 <strong>관리자(admin)</strong>로 등록됩니다.
+      </div>
+
+      <div class="error-msg" id="error-msg"></div>
+
+      <form id="register-form">
+        <div class="form-group">
+          <label for="display_name">이름</label>
+          <input type="text" id="display_name" placeholder="홍길동" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label for="email">이메일</label>
+          <input type="email" id="email" placeholder="you@company.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="password">비밀번호</label>
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="new-password" minlength="8">
+          <div class="password-hint">최소 8자 이상</div>
+        </div>
+        <div class="form-group">
+          <label for="password_confirm">비밀번호 확인</label>
+          <input type="password" id="password_confirm" placeholder="••••••••" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn-primary" id="btn-submit">계정 만들기</button>
+      </form>
+    </div>
+
+    <div class="auth-footer">
+      이미 계정이 있으신가요? <a href="/login">로그인</a>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('register-form');
+    const errorMsg = document.getElementById('error-msg');
+    const btn = document.getElementById('btn-submit');
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.style.display = 'block';
+    }
+
+    // 첫 번째 사용자인지 확인
+    async function checkFirstUser() {
+      try {
+        const res = await fetch('/api/admin/users', { credentials: 'include' });
+        if (res.status === 401) {
+          // 미로그인 상태에서 admin/users 접근 불가 — 별도 방법 없음
+          // 회원가입 후 알려줌
+        }
+      } catch {}
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMsg.style.display = 'none';
+
+      const display_name = document.getElementById('display_name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const password_confirm = document.getElementById('password_confirm').value;
+
+      if (password !== password_confirm) {
+        showError('비밀번호가 일치하지 않습니다.');
+        return;
+      }
+
+      if (password.length < 8) {
+        showError('비밀번호는 최소 8자 이상이어야 합니다.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '계정 생성 중...';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, display_name, password }),
+          credentials: 'include',
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.detail || '회원가입 실패');
+          return;
+        }
+
+        // 자동 로그인
+        const loginRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+          credentials: 'include',
+        });
+
+        const loginData = await loginRes.json();
+        if (loginData.csrf_token) {
+          localStorage.setItem('csrf_token', loginData.csrf_token);
+        }
+
+        if (data.role === 'admin') {
+          alert('🎉 관리자 계정이 생성되었습니다!\n\n로그인 후 설정에서 Outlook을 연동하세요.');
+        }
+
+        window.location.href = '/';
+      } catch (err) {
+        showError('서버 연결 오류가 발생했습니다.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '계정 만들기';
+      }
+    });
+  </script>
+</body>
+</html>

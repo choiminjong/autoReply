@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>설정 — Mail Kanban</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #238636;
+      --accent-hover: #2ea043;
+      --danger: #f85149;
+      --warning: #d29922;
+      --success: #3fb950;
+      --input-bg: #0d1117;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── 헤더 ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-logo { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .back-link { color: var(--text-muted); text-decoration: none; font-size: 13px; }
+    .back-link:hover { color: var(--text); }
+
+    .header-user { font-size: 13px; color: var(--text-muted); }
+
+    /* ── 레이아웃 ── */
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 32px;
+    }
+
+    /* ── 섹션 ── */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .section-body { padding: 20px; }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .setting-row:last-child { border-bottom: none; }
+
+    .setting-label { font-size: 14px; font-weight: 500; }
+    .setting-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── 배지 ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-success { background: rgba(63, 185, 80, 0.1); color: var(--success); border: 1px solid rgba(63, 185, 80, 0.3); }
+    .badge-warning { background: rgba(210, 153, 34, 0.1); color: var(--warning); border: 1px solid rgba(210, 153, 34, 0.3); }
+
+    /* ── 버튼 ── */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    .btn-danger { background: rgba(248, 81, 73, 0.1); color: var(--danger); border: 1px solid rgba(248, 81, 73, 0.3); }
+    .btn-danger:hover { background: rgba(248, 81, 73, 0.2); }
+
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: #58a6ff; }
+
+    /* ── 폴더 목록 ── */
+    .folder-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .folder-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .folder-left { display: flex; align-items: center; gap: 10px; }
+    .folder-name { font-size: 13px; font-weight: 500; }
+    .folder-count { font-size: 11px; color: var(--text-muted); }
+
+    .toggle-btn {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .toggle-btn.team {
+      background: rgba(63, 185, 80, 0.1);
+      color: var(--success);
+      border-color: rgba(63, 185, 80, 0.3);
+    }
+
+    .toggle-btn.private {
+      background: var(--surface2);
+      color: var(--text-muted);
+    }
+
+    .toggle-btn:hover { opacity: 0.8; }
+
+    /* ── 권한 체크박스 ── */
+    .scope-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .scope-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .scope-item:hover:not(.scope-required) { border-color: #58a6ff; }
+
+    .scope-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #238636;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .scope-item input[type="checkbox"]:disabled { cursor: not-allowed; opacity: 0.6; }
+
+    .scope-info { flex: 1; }
+
+    .scope-name {
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Fira Code', monospace;
+      color: #79c0ff;
+    }
+
+    .scope-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .scope-required-badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      background: rgba(35, 134, 54, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(63, 185, 80, 0.3);
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .scope-warning {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(210, 153, 34, 0.1);
+      border: 1px solid rgba(210, 153, 34, 0.3);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--warning);
+    }
+
+    /* ── 입력 ── */
+    .input-group { display: flex; gap: 10px; }
+
+    .input-field {
+      flex: 1;
+      padding: 8px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .input-field:focus { border-color: #58a6ff; }
+
+    /* ── 토스트 ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 9999;
+      animation: slideIn 0.2s ease;
+    }
+
+    .toast-success { background: #238636; color: white; }
+    .toast-error { background: #da3633; color: white; }
+
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">📬 Mail Kanban</div>
+      <a href="/" class="back-link">← 칸반 보드</a>
+    </div>
+    <div class="header-user" id="header-user"></div>
+  </div>
+
+  <div class="container">
+    <h1 class="page-title">⚙️ 설정</h1>
+
+    <!-- 프로필 -->
+    <div class="section">
+      <div class="section-header">프로필</div>
+      <div class="section-body">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label" id="profile-name">-</div>
+            <div class="setting-desc" id="profile-email">-</div>
+          </div>
+          <span class="badge badge-success" id="profile-role"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Outlook 연동 -->
+    <div class="section">
+      <div class="section-header">Outlook 연동</div>
+      <div class="section-body">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Microsoft Outlook</div>
+            <div class="setting-desc" id="outlook-desc">연동 상태를 확인 중...</div>
+          </div>
+          <div id="outlook-actions">
+            <span class="badge badge-warning">확인 중...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Microsoft Graph API 권한 -->
+    <div class="section">
+      <div class="section-header">Microsoft Graph API 권한</div>
+      <div class="section-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:4px">
+          Outlook 연동 시 요청할 권한을 선택합니다. 변경 후 <strong>Outlook 재연동</strong>이 필요합니다.
+        </p>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px">
+          Azure Portal에서도 동일한 권한이 등록되어 있어야 합니다.
+        </p>
+        <div class="scope-grid" id="scope-grid">
+          <div style="color:var(--text-muted);font-size:13px">권한 목록을 불러오는 중...</div>
+        </div>
+        <div class="scope-warning" id="scope-warning">
+          ⚠ 권한이 변경되었습니다. 저장 후 Outlook 연동 해제 → 재연동이 필요합니다.
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;align-items:center" id="scope-actions" style="display:none">
+          <button class="btn btn-primary" onclick="saveScopes()" id="btn-save-scopes">권한 저장</button>
+          <span style="font-size:12px;color:var(--text-muted)" id="scope-save-hint"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 동기화 폴더 -->
+    <div class="section">
+      <div class="section-header">동기화 폴더</div>
+      <div class="section-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          동기화할 폴더를 선택하고 팀에게 공개할 폴더를 설정하세요. 기본값은 비공개입니다.
+        </p>
+        <div class="folder-list" id="folder-list">
+          <div style="color:var(--text-muted);font-size:13px">폴더를 불러오는 중...</div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="saveFolders()">설정 저장</button>
+          <button class="btn btn-secondary" onclick="refreshFolders()">↻ 새로고침</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 알림 설정 -->
+    <div class="section">
+      <div class="section-header">Slack 알림</div>
+      <div class="section-body">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">개인 Slack Webhook URL</div>
+            <div class="setting-desc">@멘션 시 개인 DM으로 알림을 받을 수 있습니다</div>
+          </div>
+        </div>
+        <div class="input-group" style="margin-top:12px">
+          <input type="url" class="input-field" id="slack-webhook" placeholder="https://hooks.slack.com/services/...">
+          <button class="btn btn-primary" onclick="saveSlackWebhook()">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const csrf = localStorage.getItem('csrf_token') || '';
+
+    function csrfHeaders() {
+      return { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf };
+    }
+
+    function showToast(msg, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    let folders = [];
+    let currentUser = null;
+    let originalScopes = new Set();
+
+    async function init() {
+      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      if (res.status === 401) { window.location.href = '/login'; return; }
+      if (!res.ok) { showToast('인증 확인 중 오류가 발생했습니다.', 'error'); return; }
+      currentUser = await res.json();
+
+      document.getElementById('header-user').textContent = currentUser.display_name;
+      document.getElementById('profile-name').textContent = currentUser.display_name;
+      document.getElementById('profile-email').textContent = currentUser.email;
+      document.getElementById('profile-role').textContent = currentUser.role === 'admin' ? '👑 관리자' : '👤 팀원';
+
+      await loadOutlookStatus();
+      await loadScopes();
+      await loadFolders();
+    }
+
+    async function loadOutlookStatus() {
+      const desc = document.getElementById('outlook-desc');
+      const actions = document.getElementById('outlook-actions');
+      const res = await fetch('/api/outlook/status', { credentials: 'include' });
+      if (!res.ok) {
+        if (desc) desc.textContent = 'Outlook 연동 상태를 확인할 수 없습니다.';
+        if (actions) actions.innerHTML = '<span style="color:var(--danger);font-size:13px">오류가 발생했습니다. 새로고침해 주세요.</span>';
+        return;
+      }
+      const data = await res.json();
+
+      if (data.connected) {
+        const connDate = data.connected_at ? new Date(data.connected_at).toLocaleDateString('ko-KR') : '';
+        desc.textContent = `${data.ms_email} (연동됨 ${connDate})`;
+        actions.innerHTML = `
+          <span class="badge badge-success">✓ 연동됨</span>
+          <button class="btn btn-danger" onclick="disconnectOutlook()" style="margin-left:8px">연동 해제</button>
+        `;
+      } else {
+        desc.textContent = 'Outlook이 연동되지 않았습니다. 메일 동기화를 위해 연동이 필요합니다.';
+        actions.innerHTML = `<a href="/api/outlook/connect" class="btn btn-primary">Outlook 연동</a>`;
+      }
+    }
+
+    async function loadScopes() {
+      const grid = document.getElementById('scope-grid');
+      const res = await fetch('/api/admin/scopes', { credentials: 'include' });
+      if (!res.ok) {
+        grid.innerHTML = '<div style="color:var(--danger);font-size:13px">권한 목록을 불러올 수 없습니다.</div>';
+        return;
+      }
+      const data = await res.json();
+      originalScopes = new Set(data.active_scope.split(' '));
+      renderScopes(data.catalog);
+      document.getElementById('scope-actions').style.display = 'flex';
+    }
+
+    function renderScopes(catalog) {
+      const isAdmin = currentUser && currentUser.role === 'admin';
+      const grid = document.getElementById('scope-grid');
+      grid.innerHTML = catalog.map(item => {
+        const checked = item.enabled ? 'checked' : '';
+        const disabled = item.required || !isAdmin ? 'disabled' : '';
+        const reqBadge = item.required ? '<span class="scope-required-badge">필수</span>' : '';
+        return `
+          <label class="scope-item${item.required ? ' scope-required' : ''}">
+            <input type="checkbox" ${checked} ${disabled}
+                   data-scope="${item.scope}"
+                   onchange="onScopeChange()">
+            <div class="scope-info">
+              <div class="scope-name">${item.scope}</div>
+              <div class="scope-label">${item.label}</div>
+            </div>
+            ${reqBadge}
+          </label>
+        `;
+      }).join('');
+
+      if (!isAdmin) {
+        const hint = document.getElementById('scope-save-hint');
+        if (hint) hint.textContent = '권한 변경은 관리자만 가능합니다.';
+        const btn = document.getElementById('btn-save-scopes');
+        if (btn) btn.disabled = true;
+      }
+    }
+
+    function onScopeChange() {
+      const current = getCheckedScopes();
+      const changed = [...current].some(s => !originalScopes.has(s)) ||
+                      [...originalScopes].some(s => !current.has(s));
+      document.getElementById('scope-warning').style.display = changed ? 'block' : 'none';
+    }
+
+    function getCheckedScopes() {
+      const boxes = document.querySelectorAll('#scope-grid input[type="checkbox"]');
+      const result = new Set();
+      boxes.forEach(b => { if (b.checked) result.add(b.dataset.scope); });
+      return result;
+    }
+
+    async function saveScopes() {
+      const scopes = [...getCheckedScopes()];
+      const btn = document.getElementById('btn-save-scopes');
+      btn.disabled = true;
+      btn.textContent = '저장 중...';
+
+      const res = await fetch('/api/admin/scopes', {
+        method: 'PATCH',
+        headers: csrfHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ scopes }),
+      });
+
+      btn.disabled = false;
+      btn.textContent = '권한 저장';
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.detail || '저장 실패', 'error');
+        return;
+      }
+
+      const data = await res.json();
+      originalScopes = new Set(data.active_scope.split(' '));
+      document.getElementById('scope-warning').style.display = 'none';
+      showToast('권한이 저장되었습니다. Outlook을 재연동해주세요.', 'success');
+    }
+
+    async function disconnectOutlook() {
+      if (!confirm('Outlook 연동을 해제하시겠습니까? 기존 동기화 데이터는 유지됩니다.')) return;
+      const res = await fetch('/api/outlook/disconnect', {
+        method: 'DELETE',
+        headers: csrfHeaders(),
+        credentials: 'include',
+      });
+      if (res.ok) {
+        showToast('Outlook 연동이 해제되었습니다.', 'success');
+        await loadOutlookStatus();
+      }
+    }
+
+    async function loadFolders() {
+      const res = await fetch('/api/folders', { credentials: 'include' });
+      if (!res.ok) {
+        document.getElementById('folder-list').innerHTML = '<div style="color:var(--text-muted);font-size:13px">폴더를 불러오려면 Outlook을 먼저 연동하세요.</div>';
+        return;
+      }
+      const data = await res.json();
+      folders = data.folders || [];
+      renderFolders();
+    }
+
+    function renderFolders() {
+      const el = document.getElementById('folder-list');
+      if (!folders.length) {
+        el.innerHTML = '<div style="color:var(--text-muted);font-size:13px">폴더가 없습니다.</div>';
+        return;
+      }
+
+      el.innerHTML = folders.map(f => `
+        <div class="folder-item">
+          <div class="folder-left">
+            <input type="checkbox" id="f-${f.folder_id}" ${f.is_synced ? 'checked' : ''}
+                   onchange="toggleSync('${f.folder_id}', this.checked)">
+            <div>
+              <div class="folder-name">${escHtml(f.folder_name)}</div>
+              ${f.mail_count ? `<div class="folder-count">${f.mail_count}개 메일</div>` : ''}
+            </div>
+          </div>
+          <button class="toggle-btn ${f.is_team_visible ? 'team' : 'private'}"
+                  onclick="toggleVisibility('${f.folder_id}', ${f.is_team_visible})">
+            ${f.is_team_visible ? '🌐 팀공유' : '🔒 비공개'}
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function toggleSync(folderId, checked) {
+      const f = folders.find(x => x.folder_id === folderId);
+      if (f) f.is_synced = checked;
+    }
+
+    async function toggleVisibility(folderId, currentlyVisible) {
+      const newVal = !currentlyVisible;
+      const res = await fetch(`/api/folders/${folderId}/visibility`, {
+        method: 'PATCH',
+        headers: csrfHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ is_team_visible: newVal }),
+      });
+      if (res.ok) {
+        const f = folders.find(x => x.folder_id === folderId);
+        if (f) f.is_team_visible = newVal ? 1 : 0;
+        renderFolders();
+        showToast(newVal ? '팀 공유로 변경되었습니다.' : '비공개로 변경되었습니다.', 'success');
+      }
+    }
+
+    async function saveFolders() {
+      const selected = folders.filter(f => f.is_synced).map(f => f.folder_id);
+      const res = await fetch('/api/folders/save-selection', {
+        method: 'POST',
+        headers: csrfHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ selected_folder_ids: selected }),
+      });
+      if (res.ok) showToast(`${selected.length}개 폴더 설정이 저장되었습니다.`, 'success');
+      else showToast('저장 실패', 'error');
+    }
+
+    async function refreshFolders() {
+      const res = await fetch('/api/folders/refresh', {
+        method: 'POST',
+        headers: csrfHeaders(),
+        credentials: 'include',
+      });
+      if (res.ok) {
+        await loadFolders();
+        showToast('폴더 목록이 업데이트되었습니다.', 'success');
+      }
+    }
+
+    async function saveSlackWebhook() {
+      const url = document.getElementById('slack-webhook').value.trim();
+      // Phase 2에서 user_settings API와 연동 예정
+      showToast('Slack Webhook 저장 기능은 Phase 2에서 제공됩니다.', 'error');
+    }
+
+    init();
+  </script>
+</body>
+</html>

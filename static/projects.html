@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>프로젝트 선택 — Mail Kanban</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #238636;
+      --accent-hover: #2ea043;
+      --danger: #f85149;
+      --warning: #d29922;
+      --success: #3fb950;
+      --blue: #58a6ff;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-logo { font-size: 18px; font-weight: 700; }
+    .header-user { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-muted); }
+
+    .header-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    .header-links a:hover { color: var(--text); background: var(--surface2); }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      flex: 1;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+
+    .page-title { font-size: 22px; font-weight: 700; }
+
+    .btn {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--blue); }
+    .btn-danger { background: rgba(248,81,73,.1); color: var(--danger); border: 1px solid rgba(248,81,73,.3); }
+    .btn-danger:hover { background: rgba(248,81,73,.2); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+    /* ── 프로젝트 카드 그리드 ── */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 16px;
+    }
+
+    .project-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.1s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .project-card:hover {
+      border-color: var(--blue);
+      transform: translateY(-1px);
+    }
+
+    .project-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .project-name { font-size: 16px; font-weight: 700; }
+    .project-desc { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    .project-ml {
+      font-size: 11px;
+      color: var(--blue);
+      background: rgba(88, 166, 255, 0.1);
+      border: 1px solid rgba(88, 166, 255, 0.2);
+      border-radius: 20px;
+      padding: 2px 8px;
+      margin-top: 6px;
+      display: inline-block;
+    }
+
+    .project-stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .stat { display: flex; flex-direction: column; gap: 2px; }
+    .stat-value { font-size: 18px; font-weight: 700; }
+    .stat-label { font-size: 11px; color: var(--text-muted); }
+    .stat-value.warn { color: var(--warning); }
+
+    .role-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    .role-owner { background: rgba(210,153,34,.15); color: var(--warning); border: 1px solid rgba(210,153,34,.3); }
+    .role-member { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-state h2 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+    .empty-state p { font-size: 14px; margin-bottom: 24px; }
+
+    /* ── 모달 ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      width: 480px;
+      max-width: calc(100vw - 40px);
+    }
+
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    .form-input {
+      width: 100%;
+      padding: 9px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+    .form-input:focus { border-color: var(--blue); }
+
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 9999;
+      animation: slideIn .2s ease;
+    }
+    .toast-success { background: #238636; color: white; }
+    .toast-error { background: #da3633; color: white; }
+
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-logo">📬 Mail Kanban</div>
+    <div class="header-user">
+      <div class="header-links">
+        <a href="/settings">설정</a>
+        <a href="#" id="admin-link" style="display:none">관리</a>
+      </div>
+      <span id="user-name">-</span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">내 프로젝트</h1>
+      <button class="btn btn-primary" onclick="openCreateModal()">+ 새 프로젝트</button>
+    </div>
+
+    <div class="projects-grid" id="projects-grid">
+      <div style="color:var(--text-muted);font-size:13px">불러오는 중...</div>
+    </div>
+  </div>
+
+  <!-- 프로젝트 생성 모달 -->
+  <div class="modal-overlay" id="create-modal">
+    <div class="modal">
+      <div class="modal-title">새 프로젝트 만들기</div>
+      <div class="form-group">
+        <label class="form-label">프로젝트 이름 *</label>
+        <input type="text" class="form-input" id="proj-name" placeholder="예: 사내IT팀">
+      </div>
+      <div class="form-group">
+        <label class="form-label">설명</label>
+        <input type="text" class="form-input" id="proj-desc" placeholder="팀 업무 설명">
+      </div>
+      <div class="form-group">
+        <label class="form-label">팀 메일링 리스트</label>
+        <input type="email" class="form-input" id="proj-ml" placeholder="Office-IT@company.co.kr">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">이 주소로 오는 메일이 자동으로 이 프로젝트에 연결됩니다.</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeCreateModal()">취소</button>
+        <button class="btn btn-primary" onclick="createProject()">만들기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const csrf = localStorage.getItem('csrf_token') || '';
+    let currentUser = null;
+
+    function csrfHeaders() {
+      return { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf };
+    }
+
+    function showToast(msg, type = 'success') {
+      const el = document.createElement('div');
+      el.className = `toast toast-${type}`;
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+
+    function escHtml(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    async function init() {
+      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      if (res.status === 401) { window.location.href = '/login'; return; }
+      if (!res.ok) { showToast('인증 확인 중 오류가 발생했습니다.', 'error'); return; }
+      currentUser = await res.json();
+
+      document.getElementById('user-name').textContent = currentUser.display_name;
+      if (currentUser.role === 'admin') {
+        document.getElementById('admin-link').style.display = '';
+      }
+
+      await loadProjects();
+    }
+
+    async function loadProjects() {
+      const res = await fetch('/api/projects', { credentials: 'include' });
+      if (!res.ok) {
+        const grid = document.getElementById('projects-grid');
+        if (grid) grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><h2>프로젝트 목록을 불러올 수 없습니다.</h2></div>';
+        return;
+      }
+      const data = await res.json();
+      renderProjects(data.projects || []);
+    }
+
+    function renderProjects(projects) {
+      const grid = document.getElementById('projects-grid');
+      if (!projects.length) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1">
+            <h2>아직 프로젝트가 없습니다</h2>
+            <p>팀 메일을 함께 관리할 프로젝트를 만들어보세요.</p>
+            <button class="btn btn-primary" onclick="openCreateModal()">+ 첫 프로젝트 만들기</button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = projects.map(p => {
+        const roleClass = p.my_role === 'owner' ? 'role-owner' : 'role-member';
+        const roleLabel = p.my_role === 'owner' ? '관리자' : '팀원';
+        const unclaimed = p.unclaimed_count || 0;
+
+        return `
+          <div class="project-card" onclick="selectProject('${p.project_id}', ${JSON.stringify(escHtml(p.name))})">
+            <div class="project-card-header">
+              <div>
+                <div class="project-name">${escHtml(p.name)}</div>
+                ${p.description ? `<div class="project-desc">${escHtml(p.description)}</div>` : ''}
+                ${p.mailing_list ? `<div class="project-ml">📧 ${escHtml(p.mailing_list)}</div>` : ''}
+              </div>
+              <span class="role-badge ${roleClass}">${roleLabel}</span>
+            </div>
+            <div class="project-stats">
+              <div class="stat">
+                <div class="stat-value">${p.member_count || 0}</div>
+                <div class="stat-label">팀원</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value ${unclaimed > 0 ? 'warn' : ''}">${unclaimed}</div>
+                <div class="stat-label">미클레임</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectProject(projectId, projectName) {
+      sessionStorage.setItem('active_project_id', projectId);
+      sessionStorage.setItem('active_project_name', projectName);
+      window.location.href = '/';
+    }
+
+    function openCreateModal() {
+      document.getElementById('create-modal').classList.add('open');
+      document.getElementById('proj-name').focus();
+    }
+
+    function closeCreateModal() {
+      document.getElementById('create-modal').classList.remove('open');
+      document.getElementById('proj-name').value = '';
+      document.getElementById('proj-desc').value = '';
+      document.getElementById('proj-ml').value = '';
+    }
+
+    async function createProject() {
+      const name = document.getElementById('proj-name').value.trim();
+      if (!name) { showToast('프로젝트 이름을 입력하세요.', 'error'); return; }
+
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: csrfHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({
+          name,
+          description: document.getElementById('proj-desc').value.trim() || null,
+          mailing_list: document.getElementById('proj-ml').value.trim() || null,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        showToast(`"${name}" 프로젝트가 생성되었습니다.`);
+        closeCreateModal();
+        await loadProjects();
+        // 생성 후 바로 해당 프로젝트로 이동할지 선택
+        if (confirm('새 프로젝트로 이동할까요?')) {
+          selectProject(data.project_id, name);
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.detail || '생성 실패', 'error');
+      }
+    }
+
+    async function logout() {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: csrfHeaders(),
+        credentials: 'include',
+      });
+      localStorage.removeItem('csrf_token');
+      window.location.href = '/login';
+    }
+
+    // 모달 외부 클릭 닫기
+    document.getElementById('create-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeCreateModal();
+    });
+
+    // ESC 닫기
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeCreateModal();
+    });
+
+    init();
+  </script>
+</body>
+</html>

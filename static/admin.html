@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 — Mail Kanban</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #238636;
+      --accent-hover: #2ea043;
+      --danger: #f85149;
+      --warning: #d29922;
+      --success: #3fb950;
+      --blue: #58a6ff;
+    }
+
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-logo { font-size: 18px; font-weight: 700; }
+    .back-link { color: var(--text-muted); text-decoration: none; font-size: 13px; }
+    .back-link:hover { color: var(--text); }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+    /* 탭 네비 */
+    .tab-nav { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+    .tab-btn {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: inherit;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .tab-btn.active { color: var(--text); border-bottom-color: var(--blue); }
+    .tab-btn:hover { color: var(--text); }
+
+    .tab-content { display: none; }
+    .tab-content.visible { display: block; }
+
+    /* 섹션 */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .section-body { padding: 20px; }
+
+    /* 테이블 */
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 8px 12px; border-bottom: 1px solid var(--border); text-transform: uppercase; }
+    td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    /* 배지 */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge-admin { background: rgba(210,153,34,.15); color: var(--warning); border: 1px solid rgba(210,153,34,.3); }
+    .badge-user { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-connected { background: rgba(63,185,80,.1); color: var(--success); border: 1px solid rgba(63,185,80,.2); }
+    .badge-disconnected { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-inactive { background: rgba(248,81,73,.1); color: var(--danger); border: 1px solid rgba(248,81,73,.2); }
+
+    /* 버튼 */
+    .btn {
+      padding: 7px 14px; border-radius: 7px; font-size: 12px; font-weight: 600;
+      font-family: inherit; cursor: pointer; border: none; transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--blue); }
+    .btn-danger { background: rgba(248,81,73,.1); color: var(--danger); border: 1px solid rgba(248,81,73,.3); }
+    .btn-danger:hover { background: rgba(248,81,73,.2); }
+
+    /* 설정 행 */
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label { font-size: 14px; font-weight: 500; }
+    .setting-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    .setting-input-group { display: flex; align-items: center; gap: 10px; }
+    .setting-select, .setting-input {
+      padding: 6px 12px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 7px; color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+    }
+    .setting-select:focus, .setting-input:focus { border-color: var(--blue); }
+    .setting-input { min-width: 280px; }
+
+    /* 역할 선택 */
+    .role-select {
+      padding: 4px 10px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 12px; font-family: inherit;
+      cursor: pointer;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      padding: 12px 20px; border-radius: 8px; font-size: 13px;
+      font-weight: 500; z-index: 9999; animation: slideIn .2s ease;
+    }
+    .toast-success { background: #238636; color: white; }
+    .toast-error { background: #da3633; color: white; }
+
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">📬 Mail Kanban</div>
+    <a href="/" class="back-link">← 칸반 보드</a>
+  </div>
+  <div style="font-size:13px;color:var(--text-muted)">🛡 관리자</div>
+</div>
+
+<div class="container">
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('users')">👥 사용자 관리</button>
+    <button class="tab-btn" onclick="showTab('settings')">⚙️ 시스템 설정</button>
+    <button class="tab-btn" onclick="showTab('projects')">📁 프로젝트 현황</button>
+  </div>
+
+  <!-- 사용자 관리 탭 -->
+  <div id="tab-users" class="tab-content visible">
+    <div class="section">
+      <div class="section-header" style="display:flex;justify-content:space-between;align-items:center">
+        <span>사용자 목록</span>
+        <span id="user-count" style="color:var(--text-muted);font-weight:400;font-size:13px"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>이메일</th>
+            <th>역할</th>
+            <th>Outlook</th>
+            <th>상태</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody id="user-table-body">
+          <tr><td colspan="6" style="color:var(--text-muted);text-align:center">불러오는 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 시스템 설정 탭 -->
+  <div id="tab-settings" class="tab-content">
+    <div class="section">
+      <div class="section-header">세션 설정</div>
+      <div class="section-body">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">기본 세션 유효 시간</div>
+            <div class="setting-desc">다음 로그인부터 적용됩니다.</div>
+          </div>
+          <div class="setting-input-group">
+            <select class="setting-select" id="setting-default_session_hours">
+              <option value="4">4시간</option>
+              <option value="8">8시간</option>
+              <option value="12">12시간</option>
+              <option value="24">24시간</option>
+            </select>
+            <button class="btn btn-primary" onclick="saveSetting('default_session_hours')">저장</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">최대 세션 유효 시간</div>
+            <div class="setting-desc">사용자가 설정할 수 있는 최대값입니다.</div>
+          </div>
+          <div class="setting-input-group">
+            <select class="setting-select" id="setting-max_session_hours">
+              <option value="8">8시간</option>
+              <option value="12">12시간</option>
+              <option value="24">24시간</option>
+              <option value="72">72시간</option>
+            </select>
+            <button class="btn btn-primary" onclick="saveSetting('max_session_hours')">저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">알림 설정</div>
+      <div class="section-body">
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">미클레임 알림 기준</div>
+            <div class="setting-desc">이 시간 이상 미클레임 상태이면 Slack 알림을 전송합니다.</div>
+          </div>
+          <div class="setting-input-group">
+            <select class="setting-select" id="setting-unclaimed_alert_minutes">
+              <option value="15">15분</option>
+              <option value="30">30분</option>
+              <option value="60">1시간</option>
+              <option value="120">2시간</option>
+            </select>
+            <button class="btn btn-primary" onclick="saveSetting('unclaimed_alert_minutes')">저장</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">팀 Slack Webhook URL</div>
+            <div class="setting-desc">미클레임 알림, 팀 전체 알림에 사용됩니다.</div>
+          </div>
+          <div class="setting-input-group">
+            <input type="url" class="setting-input" id="setting-team_slack_webhook"
+                   placeholder="https://hooks.slack.com/services/...">
+            <button class="btn btn-primary" onclick="saveSetting('team_slack_webhook')">저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 프로젝트 현황 탭 -->
+  <div id="tab-projects" class="tab-content">
+    <div class="section">
+      <div class="section-header">전체 프로젝트</div>
+      <table>
+        <thead>
+          <tr>
+            <th>프로젝트명</th>
+            <th>메일링 리스트</th>
+            <th>팀원 수</th>
+            <th>미클레임</th>
+            <th>생성일</th>
+          </tr>
+        </thead>
+        <tbody id="project-table-body">
+          <tr><td colspan="5" style="color:var(--text-muted);text-align:center">불러오는 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const csrf = localStorage.getItem('csrf_token') || '';
+  let currentAdminId = null;
+  let settings = {};
+
+  function csrfHeaders() {
+    return { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf };
+  }
+
+  function showToast(msg, type = 'success') {
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+
+  function escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showTab(name) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('visible'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('visible');
+    event.target.classList.add('active');
+    if (name === 'settings') loadSettings();
+    if (name === 'projects') loadProjects();
+  }
+
+  async function init() {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    if (!res.ok) { showToast('인증 확인 중 오류가 발생했습니다.', 'error'); return; }
+    const user = await res.json();
+    if (user.role !== 'admin') { window.location.href = '/'; return; }
+    currentAdminId = user.user_id;
+    await loadUsers();
+  }
+
+  async function loadUsers() {
+    const res = await fetch('/api/admin/users', { credentials: 'include' });
+    if (!res.ok) {
+      const tbody = document.getElementById('user-table-body');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger);text-align:center;padding:24px">사용자 목록을 불러올 수 없습니다.</td></tr>';
+      return;
+    }
+    const data = await res.json();
+    const users = data.users || [];
+    document.getElementById('user-count').textContent = `총 ${users.length}명`;
+    renderUsers(users);
+  }
+
+  function renderUsers(users) {
+    const tbody = document.getElementById('user-table-body');
+    if (!users.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted);text-align:center;padding:24px">사용자가 없습니다.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = users.map(u => {
+      const roleBadge = u.role === 'admin'
+        ? `<span class="badge badge-admin">👑 관리자</span>`
+        : `<span class="badge badge-user">👤 팀원</span>`;
+
+      const outlookBadge = u.ms_email
+        ? `<span class="badge badge-connected">✓ ${escHtml(u.ms_email)}</span>`
+        : `<span class="badge badge-disconnected">미연동</span>`;
+
+      const statusBadge = u.is_active
+        ? `<span class="badge badge-connected">활성</span>`
+        : `<span class="badge badge-inactive">비활성</span>`;
+
+      const isSelf = u.user_id === currentAdminId;
+      const roleSelect = isSelf ? roleBadge : `
+        <select class="role-select" onchange="changeRole('${u.user_id}', this.value)">
+          <option value="user" ${u.role === 'user' ? 'selected' : ''}>👤 팀원</option>
+          <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>👑 관리자</option>
+        </select>
+      `;
+
+      const toggleBtn = isSelf ? '' : u.is_active
+        ? `<button class="btn btn-danger" onclick="toggleActive('${u.user_id}', false)">비활성화</button>`
+        : `<button class="btn btn-secondary" onclick="toggleActive('${u.user_id}', true)">활성화</button>`;
+
+      return `
+        <tr>
+          <td><strong>${escHtml(u.display_name)}</strong>${isSelf ? ' <span style="font-size:10px;color:var(--text-muted)">(나)</span>' : ''}</td>
+          <td style="color:var(--text-muted)">${escHtml(u.email)}</td>
+          <td>${roleSelect}</td>
+          <td>${outlookBadge}</td>
+          <td>${statusBadge}</td>
+          <td>${toggleBtn}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function changeRole(userId, newRole) {
+    if (!confirm(`이 사용자의 역할을 "${newRole === 'admin' ? '관리자' : '팀원'}"로 변경하시겠습니까?`)) {
+      await loadUsers();
+      return;
+    }
+
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      headers: csrfHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ role: newRole }),
+    });
+
+    if (res.ok) {
+      showToast('역할이 변경되었습니다.', 'success');
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast(err.detail || '변경 실패', 'error');
+      await loadUsers();
+    }
+  }
+
+  async function toggleActive(userId, isActive) {
+    const msg = isActive ? '이 사용자를 활성화하시겠습니까?' : '이 사용자를 비활성화하시겠습니까? 현재 세션이 종료됩니다.';
+    if (!confirm(msg)) return;
+
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      headers: csrfHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ is_active: isActive }),
+    });
+
+    if (res.ok) {
+      showToast(isActive ? '활성화되었습니다.' : '비활성화되었습니다.', 'success');
+      await loadUsers();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast(err.detail || '변경 실패', 'error');
+    }
+  }
+
+  async function loadSettings() {
+    const res = await fetch('/api/admin/settings', { credentials: 'include' });
+    if (!res.ok) {
+      showToast('설정을 불러올 수 없습니다.', 'error');
+      return;
+    }
+    const data = await res.json();
+    settings = data.settings || {};
+
+    for (const [key, value] of Object.entries(settings)) {
+      const el = document.getElementById(`setting-${key}`);
+      if (el) el.value = value;
+    }
+  }
+
+  async function saveSetting(key) {
+    const el = document.getElementById(`setting-${key}`);
+    if (!el) return;
+    const value = el.value.trim();
+
+    const res = await fetch(`/api/admin/settings/${key}`, {
+      method: 'PATCH',
+      headers: csrfHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ value }),
+    });
+
+    if (res.ok) {
+      showToast('설정이 저장되었습니다.', 'success');
+    } else {
+      showToast('저장 실패', 'error');
+    }
+  }
+
+  async function loadProjects() {
+    const res = await fetch('/api/projects', { credentials: 'include' });
+    const tbody = document.getElementById('project-table-body');
+    if (!res.ok) {
+      if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger);text-align:center;padding:24px">프로젝트 목록을 불러올 수 없습니다.</td></tr>';
+      return;
+    }
+    const data = await res.json();
+    const projects = data.projects || [];
+
+    if (!projects.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-muted);text-align:center;padding:24px">프로젝트가 없습니다.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = projects.map(p => `
+      <tr>
+        <td><strong>${escHtml(p.name)}</strong>${p.description ? `<div style="font-size:12px;color:var(--text-muted)">${escHtml(p.description)}</div>` : ''}</td>
+        <td style="color:var(--blue);font-size:12px">${p.mailing_list ? escHtml(p.mailing_list) : '-'}</td>
+        <td>${p.member_count || 0}명</td>
+        <td style="color:${(p.unclaimed_count || 0) > 0 ? 'var(--warning)' : 'inherit'}">${p.unclaimed_count || 0}건</td>
+        <td style="color:var(--text-muted);font-size:12px">${p.created_at ? p.created_at.substring(0,10) : '-'}</td>
+      </tr>
+    `).join('');
+  }
+
+  init();
+</script>
+</body>
+</html>
