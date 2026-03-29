@@ -7,3 +7,7 @@ data/
 *.db
 .DS_Store
 .cursor/*.log
+
+# gstack (외부 clone 저장소 + 코어 엔진 — git 추적 제외)
+.cursor/skills/gstack/
+.agents/skills/gstack/

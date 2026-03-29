@@ -1,0 +1,33 @@
+---
+description: gstack 스킬과 기존 프로젝트 규칙의 역할 분리. gstack 명령 사용 시 이 원칙을 따른다.
+alwaysApply: true
+---
+
+# gstack 스킬 운영 원칙
+
+이 프로젝트에는 gstack 기반 slash commands(`.agents/skills/`)와 프로젝트 규칙(`.cursor/rules/`)이 함께 존재한다.
+
+## 역할 분리 원칙
+
+**규칙 = 항상 따라야 할 정책 / 스킬 = 명시적으로 호출하는 실행 절차**
+
+| 규칙 파일 | 역할 | 연관 gstack 명령 |
+|-----------|------|-----------------|
+| `plan-documentation.mdc` | 문서 산출물 위치와 형식 정책 | `/gstack-qa`, `/gstack-ship` |
+| `owasp-security.mdc` | FastAPI/Python 보안 기준 | `/gstack-review`, `/gstack-cso` |
+| `github-upload.mdc` | 릴리즈 노트 + git push 절차 | `/gstack-ship` |
+
+## gstack 명령 사용 시 준수 사항
+
+- `/gstack-review` 실행 시: `owasp-security.mdc`의 체크리스트를 기본 검토 항목으로 포함한다
+- `/gstack-qa` 실행 시: `docs/test/phase-*.md` 형식으로 체크리스트를 생성한다
+- `/gstack-ship` 실행 시: `github-upload.mdc`의 절차에 따라 릴리즈 노트를 작성하고 git push한다
+- `/gstack-office-hours`, `/gstack-plan-*` 실행 시: 결과를 `docs/plan/`에 저장한다
+
+## 스킬 업그레이드
+
+```
+/gstack-upgrade
+```
+
+gstack 최신 버전으로 업그레이드한다.
